@@ -114,11 +114,11 @@ class Restoration {
             //get onnx input path
             function getOnnxPath() {
                 if (engine == 'Restoration - DPIR (TensorRT)' && model == 'Denoise') {
-                    return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/dpir/dpir_denoise.onnx");
+                    return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/dpir/drunet_color.onnx");
                 } else if (engine == 'Restoration - DPIR (TensorRT)' && model == 'Deblock') {
-                    return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/dpir/dpir_deblock.onnx")
+                    return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/dpir/drunet_deblocking_color.onnx")
                 } else if (engine == 'Restoration - AnimeVideo (TensorRT)') {
-                    return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/esrgan/animevideov3.onnx")
+                    return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/RealESRGANv2/realesr-animevideov3.onnx")
                 }
             }
             var onnx = getOnnxPath();

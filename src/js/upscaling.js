@@ -114,7 +114,7 @@ class Upscaling {
             //get onnx input path
             function getOnnxPath() {
                 if (!(document.getElementById('custom-model-check').checked)) {
-                    return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/esrgan/animevideov3.onnx");
+                    return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/RealESRGANv2/realesr-animevideov3.onnx");
                 } else {
                     terminal.innerHTML += '\r\n[enhancr] Using custom model: ' + path.join(appDataPath, '/.enhancr/models/RealESRGAN', document.getElementById('custom-model-text').innerHTML);
                     return path.join(appDataPath, '/.enhancr/models/RealESRGAN', document.getElementById('custom-model-text').innerHTML);

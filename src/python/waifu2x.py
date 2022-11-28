@@ -8,6 +8,7 @@ import vapoursynth as vs
 import platform
 import tempfile
 import json
+import vsmlrt
 ossystem = platform.system()
 
 core = vs.core
@@ -31,7 +32,8 @@ clip = core.ffms2.Source(source=f"{video_path}", fpsnum=-1, fpsden=1, cache=Fals
 
 clip = vs.core.resize.Bicubic(clip, format=vs.RGBS, matrix_in_s="709")
 
-clip = core.w2xnvk.Waifu2x(clip, noise=2, scale=2, model=0, precision=16)
+#clip = core.w2xnvk.Waifu2x(clip, noise=2, scale=2, model=0, precision=16)
+clip = vsmlrt.Waifu2x(clip, noise=2, scale=2, model=vsmlrt.Waifu2xModel.upconv_7_anime_style_art_rgb, backend=vsmlrt.Backend.ORT_CUDA(fp16=True))
 
 clip = vs.core.resize.Bicubic(clip, format=vs.YUV420P8, matrix_s="709")
 

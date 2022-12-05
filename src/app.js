@@ -77,6 +77,15 @@ if (!fs.existsSync(path.join(appDataPath, '/.enhancr/projects.json'))) {
   });
 };
 
+function getTmpPath() {
+  if (process.platform == 'win32') {
+      return os.tmpdir() + "\\enhancr\\";
+  } else {
+      return os.tmpdir() + "/enhancr/";
+  }
+}
+let temp = getTmpPath();
+
 // create settings file
 if (!fs.existsSync(path.join(appDataPath, '/.enhancr/settings.json'))) {
   var settings = {
@@ -88,7 +97,8 @@ if (!fs.existsSync(path.join(appDataPath, '/.enhancr/settings.json'))) {
         theme: 'blue',
         rifeTta: false,
         rifeUhd: false,
-        rifeSc: true,
+        sc: true,
+        skip: false,
         cainSc: true,
         fp16: true,
         num_streams: 2,
@@ -96,6 +106,7 @@ if (!fs.existsSync(path.join(appDataPath, '/.enhancr/settings.json'))) {
         deblockStrength: 15,
         tileRes: "512x512",
         tiling: false,
+        temp: temp,
         shapeRes: "1080x1920",
         shapes: false,
         trimAccurate: false,
@@ -121,14 +132,14 @@ fs.readFile(path.join(appDataPath, '/.enhancr/settings.json'), (err, settings) =
   if (err) throw err;
   let json = JSON.parse(settings);
 
-  if (json.settings[0].disableBlur == false) {
+  if (json.settings[0].rpc == true) {
     // discord rpc
     var client = new (require("easy-presence").EasyPresence)("1046415937886228558");
     client.on("connected", () => {
       console.log("discord rpc initialized - user: ", client.environment.user.username);
     });
     client.setActivity({
-      details: osInfo + " " + process.arch + "・enhancr - 0.9.1",
+      details: osInfo + " " + process.arch + "・enhancr - 0.9.2",
       assets: {
         large_image: "enhancr",
         large_text: "enhancr",
@@ -141,6 +152,81 @@ fs.readFile(path.join(appDataPath, '/.enhancr/settings.json'), (err, settings) =
         }
       ],
       timestamps: { start: new Date() }
+    });
+    ipcMain.on("rpc-done", function (event) {
+      client.setActivity({
+        details: osInfo + " " + process.arch + "・enhancr - 0.9.2",
+        assets: {
+          large_image: "enhancr",
+          large_text: "enhancr",
+          small_image: "enhancr-file"
+        },
+        buttons: [
+          {
+            label: "Visit on GitHub",
+            url: "https://github.com/mafiosnik777/enhancr"
+          }
+        ],
+        timestamps: { start: new Date() }
+      });
+    })
+    var date = new Date();
+    ipcMain.on("rpc-interpolation", function (event, fps, engine, percentage) {
+      client.setActivity({
+        details: "Interpolating" + "・enhancr - 0.9.2",
+        state: engine + " - " + fps + " fps" + " - " + percentage + "%",
+        assets: {
+          large_image: "interpolate",
+          large_text: "Interpolating",
+          small_image: "enhancr",
+          small_text: "enhancr - 0.9.2"
+        },
+        buttons: [
+          {
+            label: "Visit on GitHub",
+            url: "https://github.com/mafiosnik777/enhancr"
+          }
+        ],
+        timestamps: { start: date }
+      });
+    })
+    ipcMain.on("rpc-upscaling", function (event, fps, engine, percentage) {
+      client.setActivity({
+        details: "Upscaling" + "・enhancr - 0.9.2",
+        state: engine + " - " + fps + " fps" + " - " + percentage + "%",
+        assets: {
+          large_image: "upscale",
+          large_text: "Upscaling",
+          small_image: "enhancr",
+          small_text: "enhancr - 0.9.2"
+        },
+        buttons: [
+          {
+            label: "Visit on GitHub",
+            url: "https://github.com/mafiosnik777/enhancr"
+          }
+        ],
+        timestamps: { start: date }
+      });
+    });
+    ipcMain.on("rpc-restoration", function (event, fps, engine, percentage) {
+      client.setActivity({
+        details: "Restoring" + "・enhancr - 0.9.2",
+        state: engine + " - " + fps + " fps" + " - " + percentage + "%",
+        assets: {
+          large_image: "restore",
+          large_text: "Restoring",
+          small_image: "enhancr",
+          small_text: "enhancr - 0.9.2"
+        },
+        buttons: [
+          {
+            label: "Visit on GitHub",
+            url: "https://github.com/mafiosnik777/enhancr"
+          }
+        ],
+        timestamps: { start: date }
+      });
     });
   }})
 
@@ -555,6 +641,51 @@ ipcMain.on("file-request-res", (event) => {
         if (!file.canceled) {
           const filepath = file.filePaths[0].toString();
           event.reply("file-res", filepath);
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+});
+
+ipcMain.on("temp-dialog", (event) => {
+  // If the platform is 'win32' or 'Linux'
+  if (process.platform !== "darwin") {
+    // Resolves to a Promise<Object>
+    dialog
+      .showOpenDialog({
+        title: "Choose cache folder",
+        buttonLabel: "Select Directory",
+        // Specifying the File Selector Property
+        properties: ["openDirectory"],
+      })
+      .then((file) => {
+        // Stating whether dialog operation was
+        // cancelled or not.
+        console.log(file.canceled);
+        if (!file.canceled) {
+          const filepath = file.filePaths[0].toString();
+          console.log(filepath);
+          event.reply("temp-dir", filepath);
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  } else {
+    // If the platform is 'darwin' (macOS)
+    dialog
+      .showOpenDialog({
+        title: "Choose cache folder",
+        buttonLabel: "Select Directory",
+        // Selector Property In macOS
+        properties: ["openDirectory"],
+      })
+      .then((file) => {
+        if (!file.canceled) {
+          const filepath = file.filePaths[0].toString();
+          event.reply("temp-dir", filepath);
         }
       })
       .catch((err) => {

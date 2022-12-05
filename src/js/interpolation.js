@@ -11,18 +11,6 @@ const { spawn } = require('child_process');
 const terminal = document.getElementById("terminal-text");
 const enhancrPrefix = "[enhancr]";
 
-function getTmpPath() {
-    if (process.platform == 'win32') {
-        return os.tmpdir() + "\\enhancr\\";
-    } else {
-        return os.tmpdir() + "/enhancr/";
-    }
-}
-let temp = getTmpPath();
-let previewPath = path.join(temp, '/preview');
-let previewDataPath = previewPath + '/data%02d.ts';
-const appDataPath = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Preferences' : process.env.HOME + "/.local/share")
-
 const modal = document.querySelector("#modal");
 const blankModal = document.querySelector("#blank-modal");
 const processOverlay = document.getElementById("process-overlay");
@@ -42,10 +30,18 @@ sessionStorage.setItem('stopped', 'false');
 
 class Interpolation {
     static async process(file, model, output, params, extension, engine, fileOut, index) {
+        let cacheInputText = document.getElementById('cache-input-text');
+        var cache = path.normalize(cacheInputText.textContent);
+
+        let previewPath = path.join(cache, '/preview');
+        let previewDataPath = previewPath + '/data%02d.ts';
+        const appDataPath = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Preferences' : process.env.HOME + "/.local/share")
+
         let stopped = sessionStorage.getItem('stopped');
         if (!(stopped == 'true')) {
             // set flag for started interpolation process
             sessionStorage.setItem('status', 'interpolating');
+            sessionStorage.setItem('engine', engine);
 
             // render progressbar
             const loading = document.getElementById("loading");
@@ -60,16 +56,16 @@ class Interpolation {
             }
 
             // create paths if not existing
-            if (!fse.existsSync(temp)) {
-                fse.mkdirSync(temp);
+            if (!fse.existsSync(cache)) {
+                fse.mkdirSync(cache);
             };
             if (!fse.existsSync(output)) {
                 fse.mkdirSync(output)
             };
 
-            // clear temporary files
-            fse.emptyDirSync(temp);
-            console.log("Cleared temporary files");
+            // clear cacheorary files
+            fse.emptyDirSync(cache);
+            console.log("Cleared cacheorary files");
 
             if (!fse.existsSync(previewPath)) {
                 fse.mkdirSync(previewPath);
@@ -78,7 +74,7 @@ class Interpolation {
             terminal.innerHTML += '\r\n' + enhancrPrefix + ' Preparing media for interpolation process..';
 
             // scan media for subtitles
-            const subsPath = path.join(temp, "subs.ass");
+            const subsPath = path.join(cache, "subs.ass");
             try {
                 terminal.innerHTML += '\r\n' + enhancrPrefix + ` Scanning media for subtitles..`;
                 execSync(`ffmpeg -y -loglevel error -i ${file} -c:s copy ${subsPath}`);
@@ -87,7 +83,7 @@ class Interpolation {
             };
 
             // scan media for audio
-            const audioPath = path.join(temp, "audio.mka");
+            const audioPath = path.join(cache, "audio.mka");
             try {
                 terminal.innerHTML += '\r\n' + enhancrPrefix + ` Scanning media for audio..`;
                 execSync(`ffmpeg -y -loglevel quiet -i "${file}" -vn -c copy ${audioPath}`)
@@ -115,16 +111,15 @@ class Interpolation {
             else {
                 var python = path.join(__dirname, '..', "\\python\\bin\\python.exe");
             }
-            
+
             var convert = path.join(__dirname, '..', "\\python/torch/convert.py");
             var cainModel = document.getElementById('model-span').innerHTML == 'RVP - v1.0';
-            var pth = cainModel ? path.join(__dirname, '..', "/python/torch/rvpv1.pth") : path.join(__dirname, '..', "/python/torch/cvp.pth");
-            var out = path.join(temp, 'cain' + width + "x" + height + '.onnx');
+            var onnx = cainModel ? path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/cain-rvpv1/rvpv1.onnx") : path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/cain-cvpv6/cvpv6.onnx");
             var groups = model ? 2 : 3;
 
             // get engine path
             function getEnginePath() {
-                return path.join(appDataPath, '/.enhancr/models/engine', 'cain' + '-' + path.basename(pth, '.pth') + '-' + width + 'x' + height + '-' + fp + '.engine');
+                return path.join(appDataPath, '/.enhancr/models/engine', 'cain' + '-' + path.basename(onnx, '.onnx') + '-' + width + 'x' + height + '-' + fp + '.engine');
             }
             let engineOut = getEnginePath();
             sessionStorage.setItem('engineOut', engineOut);
@@ -133,31 +128,14 @@ class Interpolation {
 
             const progressSpan = document.getElementById("progress-span");
 
-            // engine conversion (pth -> onnx -> engine) (cain-trt)
+            // engine conversion (onnx -> engine) (cain-trt)
             if (!fse.existsSync(engineOut) && engine == 'Channel Attention - CAIN (TensorRT)') {
                 function convertToEngine() {
                     return new Promise(function (resolve) {
-                        var cmd = `${python} ${convert} --input ${pth} --output ${out} --height ${height} --width ${width} --groups ${groups}`;
-                        let term = spawn(cmd, [], {
-                            shell: true,
-                            stdio: ['inherit', 'pipe', 'pipe'],
-                            windowsHide: true
-                        });
-                        process.stdout.write('');
-                        term.stdout.on('data', (data) => {
-                            process.stdout.write(`${data}`);
-                            terminal.innerHTML += data;
-                        });
-                        term.stderr.on('data', (data) => {
-                            process.stderr.write(`${data}`);
-                            progressSpan.innerHTML = path.basename(file) + ' | Converting model to onnx..';
-                            terminal.innerHTML += data;
-                        });
-                        term.on("close", () => {
                             if (fp16.checked == true) {
-                                var engineCmd = `${trtexec} --fp16 --onnx=${out} --saveEngine=${engineOut} --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                                var engineCmd = `"${trtexec}" --fp16 --onnx="${onnx}" --optShapes=input:1x6x${height}x${width} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
                             } else {
-                                var engineCmd = `${trtexec} --onnx=${out} --saveEngine=${engineOut} --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                                var engineCmd = `"${trtexec}" --onnx="${onnx}" --optShapes=input:1x6x${height}x${width} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
                             }
                             let engineTerm = spawn(engineCmd, [], {
                                 shell: true,
@@ -178,7 +156,6 @@ class Interpolation {
                                 sessionStorage.setItem('conversion', 'success');
                                 resolve();
                             });
-                        })
                     })
                 }
                 await convertToEngine();
@@ -219,9 +196,9 @@ class Interpolation {
                 function convertToEngine() {
                     return new Promise(function (resolve) {
                         if (fp16.checked == true) {
-                            var cmd = `${trtexec} --fp16 --onnx=${rifeOnnx} --minShapes=input:1x8x8x8 --optShapes=input:1x8x${shapeDimensionsOpt} --maxShapes=input:1x8x${shapeDimensionsMax} --saveEngine=${rifeEngine} --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                            var cmd = `"${trtexec}" --fp16 --onnx="${rifeOnnx}" --minShapes=input:1x8x8x8 --optShapes=input:1x8x${shapeDimensionsOpt} --maxShapes=input:1x8x${shapeDimensionsMax} --saveEngine="${rifeEngine}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
                         } else {
-                            var cmd = `${trtexec} --onnx=${rifeOnnx} --minShapes=input:1x8x8x8 --optShapes=input:1x8x720x1280${shapeDimensionsOpt} --maxShapes=input:1x8x${shapeDimensionsMax} --saveEngine=${rifeEngine} --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                            var cmd = `"${trtexec}" --onnx="${rifeOnnx}" --minShapes=input:1x8x8x8 --optShapes=input:1x8x720x1280${shapeDimensionsOpt} --maxShapes=input:1x8x${shapeDimensionsMax} --saveEngine="${rifeEngine}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
                         }
                         let term = spawn(cmd, [], {
                             shell: true,
@@ -263,14 +240,14 @@ class Interpolation {
                 terminal.innerHTML += '\r\n[enhancr] Trimming video with timestamps ' + '"' + sessionStorage.getItem(`trim${index}`) + '"';
                 let timestampStart = (sessionStorage.getItem(`trim${index}`)).split('-')[0];
                 let timestampEnd = (sessionStorage.getItem(`trim${index}`)).split('-')[1];
-                let trimmedOut = path.join(temp, path.parse(file).name + '.mkv');
+                let trimmedOut = path.join(cache, path.parse(file).name + '.mkv');
                 try {
                     function trim() {
                         return new Promise(function (resolve) {
                             if (document.getElementById("trim-check").checked) {
-                                var cmd = `${ffmpeg} -y -loglevel error -ss ${timestampStart} -to ${timestampEnd} -i "${file}" -c copy -c:v libx264 -crf 14 -max_interleave_delta 0 "${trimmedOut}"`;
+                                var cmd = `"${ffmpeg}" -y -loglevel error -ss ${timestampStart} -to ${timestampEnd} -i "${file}" -c copy -c:v libx264 -crf 14 -max_interleave_delta 0 "${trimmedOut}"`;
                             } else {
-                                var cmd = `${ffmpeg} -y -loglevel error -ss ${timestampStart} -to ${timestampEnd} -i "${file}" -c copy -max_interleave_delta 0 "${trimmedOut}"`;
+                                var cmd = `"${ffmpeg}" -y -loglevel error -ss ${timestampStart} -to ${timestampEnd} -i "${file}" -c copy -max_interleave_delta 0 "${trimmedOut}"`;
                             }
                             let term = spawn(cmd, [], {
                                 shell: true,
@@ -287,6 +264,7 @@ class Interpolation {
                                 terminal.innerHTML += data;
                             });
                             term.on("close", () => {
+                                ipcRenderer.send('rpc-done');
                                 file = trimmedOut;
                                 terminal.innerHTML += '\r\n[enhancr] Trimmed video successfully.';
                                 resolve();
@@ -299,8 +277,8 @@ class Interpolation {
                 }
             }
 
-            // temp file for passing info to the AI
-            const jsonPath = path.join(temp, "tmp.json");
+            // cache file for passing info to the AI
+            const jsonPath = path.join(cache, "tmp.json");
             let json = {
                 file: file,
                 model: model,
@@ -310,8 +288,8 @@ class Interpolation {
                 streams: numStreams.value,
                 rife_tta: document.getElementById("rife-tta-check").checked,
                 rife_uhd: document.getElementById("rife-uhd-check").checked,
-                rife_scdetect: document.getElementById("rife-sc-check").checked,
-                cain_scdetect: document.getElementById("cain-sc-check").checked,
+                sc: document.getElementById("sc-check").checked,
+                skip: document.getElementById("skip-check").checked,
                 tiling: document.getElementById("tiling-check").checked,
                 tileHeight: (document.getElementById("tile-res").value).split('x')[1],
                 tileWidth: (document.getElementById("tile-res").value).split('x')[0]
@@ -377,7 +355,7 @@ class Interpolation {
             }
             let vspipe = pickVspipe();
 
-            let tmpOutPath = path.join(temp, Date.now() + extension);
+            let tmpOutPath = path.join(cache, Date.now() + extension);
             if (extension != ".mkv" && fse.existsSync(subsPath) == true) {
                 openModal(modal);
                 terminal.innerHTML += "\r\n[Error] Input video contains subtitles, but output container is not .mkv, cancelling.";
@@ -390,9 +368,9 @@ class Interpolation {
                     return new Promise(function (resolve) {
                         // if preview is enabled split out 2 streams from output
                         if (preview.checked == true) {
-                            var cmd = `${vspipe} -c y4m ${engine} - -p | ${ffmpeg} -y -loglevel error -i pipe: ${params} "${tmpOutPath}" -f hls -hls_list_size 0 -hls_flags independent_segments -hls_time 0.5 -hls_segment_type mpegts -hls_segment_filename "${previewDataPath}" -preset veryfast -vf scale=960:-1 "${path.join(previewPath, '/master.m3u8')}"`;
+                            var cmd = `"${vspipe}" --arg "tmp=${path.join(cache, "tmp.json")}" -c y4m "${engine}" - -p | "${ffmpeg}" -y -loglevel error -i pipe: ${params} "${tmpOutPath}" -f hls -hls_list_size 0 -hls_flags independent_segments -hls_time 0.5 -hls_segment_type mpegts -hls_segment_filename "${previewDataPath}" -preset veryfast -vf scale=960:-1 "${path.join(previewPath, '/master.m3u8')}"`;
                         } else {
-                            var cmd = `${vspipe} -c y4m ${engine} - -p | ${ffmpeg} -y -loglevel error -i pipe: ${params} "${tmpOutPath}"`;
+                            var cmd = `"${vspipe}" --arg "tmp=${path.join(cache, "tmp.json")}" -c y4m "${engine}" - -p | "${ffmpeg}" -y -loglevel error -i pipe: ${params} "${tmpOutPath}"`;
                         }
                         let term = spawn(cmd, [], {
                             shell: true,
@@ -410,52 +388,61 @@ class Interpolation {
                             sessionStorage.setItem('progress', data);
                         });
                         term.on("close", () => {
-                            terminal.innerHTML += `[enhancr] Finishing up interpolation..\r\n`;
-                            terminal.innerHTML += `[enhancr] Muxing in streams..\r\n`;
-
-                            // fix audio loss when muxing mkv
-                            let mkv = extension == ".mkv";
-                            let mkvFix = mkv ? "-max_interleave_delta 0" : "";
-
-                            let out = sessionStorage.getItem('pipeOutPath');
-
-                            let muxCmd = `${ffmpeg} -y -loglevel error -i "${file}" -i ${tmpOutPath} -map 1 -map 0 -map -0:v -codec copy ${mkvFix} "${out}"`;
-                            let muxTerm = spawn(muxCmd, [], {
-                                shell: true,
-                                stdio: ['inherit', 'pipe', 'pipe'],
-                                windowsHide: true
-                            });
-
-                            // merge stdout & stderr & write data to terminal
-                            process.stdout.write('');
-                            muxTerm.stdout.on('data', (data) => {
-                                process.stdout.write(`[Pipe] ${data}`);
-                            });
-                            muxTerm.stderr.on('data', (data) => {
-                                process.stderr.write(`[Pipe] ${data}`);
-                                terminal.innerHTML += '[Pipe] ' + data;
-                                sessionStorage.setItem('progress', data);
-                            });
-                            muxTerm.on("close", () => {
-                                // finish up interpolation process
-                                terminal.innerHTML += `[enhancr] Completed interpolation`;
-                                const interpolateBtnSpan = document.getElementById("interpolate-button-text");
-                                var notification = new Notification("Interpolation completed", {
-                                    icon: "./assets/enhancr.png",
-                                    body: path.basename(file)
-                                });
+                            let lines = terminal.value.match(/[^\r\n]+/g);
+                            let log = lines.slice(-10).reverse();
+                            // don't merge streams if an error occurs
+                            if (log.includes('[Pipe] pipe:: Invalid data found when processing input')) {
+                                terminal.innerHTML += `[enhancr] An error has occured.`;
                                 sessionStorage.setItem('status', 'done');
-                                successTitle.innerHTML = path.basename(sessionStorage.getItem("inputPath"));
-                                thumbModal.src = path.join(appDataPath, '/.enhancr/thumbs/thumbInterpolation.png?' + Date.now());
                                 resolve();
-                            });
+                            } else {
+                                terminal.innerHTML += `[enhancr] Finishing up interpolation..\r\n`;
+                                terminal.innerHTML += `[enhancr] Muxing in streams..\r\n`;
+
+                                // fix audio loss when muxing mkv
+                                let mkv = extension == ".mkv";
+                                let mkvFix = mkv ? "-max_interleave_delta 0" : "";
+
+                                let out = sessionStorage.getItem('pipeOutPath');
+
+                                let muxCmd = `"${ffmpeg}" -y -loglevel error -i "${file}" -i ${tmpOutPath} -map 1 -map 0 -map -0:v -codec copy ${mkvFix} "${out}"`;
+                                let muxTerm = spawn(muxCmd, [], {
+                                    shell: true,
+                                    stdio: ['inherit', 'pipe', 'pipe'],
+                                    windowsHide: true
+                                });
+
+                                // merge stdout & stderr & write data to terminal
+                                process.stdout.write('');
+                                muxTerm.stdout.on('data', (data) => {
+                                    process.stdout.write(`[Pipe] ${data}`);
+                                });
+                                muxTerm.stderr.on('data', (data) => {
+                                    process.stderr.write(`[Pipe] ${data}`);
+                                    terminal.innerHTML += '[Pipe] ' + data;
+                                    sessionStorage.setItem('progress', data);
+                                });
+                                muxTerm.on("close", () => {
+                                    // finish up interpolation process
+                                    terminal.innerHTML += `[enhancr] Completed interpolation`;
+                                    const interpolateBtnSpan = document.getElementById("interpolate-button-text");
+                                    var notification = new Notification("Interpolation completed", {
+                                        icon: "./assets/enhancr.png",
+                                        body: path.basename(file)
+                                    });
+                                    sessionStorage.setItem('status', 'done');
+                                    successTitle.innerHTML = path.basename(sessionStorage.getItem("inputPath"));
+                                    thumbModal.src = path.join(appDataPath, '/.enhancr/thumbs/thumbInterpolation.png?' + Date.now());
+                                    resolve();
+                                });
+                            }
                         })
                     })
                 }
                 await interpolate();
-                // clear temporary files
-                fse.emptyDirSync(temp);
-                console.log("Cleared temporary files");
+                // clear cacheorary files
+                fse.emptyDirSync(cache);
+                console.log("Cleared cacheorary files");
                 // timeout for 2 seconds after interpolation
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }

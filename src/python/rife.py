@@ -20,14 +20,15 @@ else:
     tmp_dir = tempfile.gettempdir() + "/enhancr/"
 
 # load json with input file path and framerate
-with open(os.path.join(tmp_dir, "tmp.json"), encoding='utf-8') as f:
+with open(os.path.join(tmp), encoding='utf-8') as f:
     data = json.load(f)
     video_path = data['file']
     frame_rate = data['framerate']
     rife_model = data['model']
     TTA = data['rife_tta']
     UHD = data['rife_uhd']
-    sceneDetection = data['rife_scdetect']
+    sceneDetection = data['sc']
+    frameskip = data['skip']
     
 # get rife model
 if rife_model == 'RIFE - v2.3':
@@ -49,13 +50,13 @@ elif rife_model == 'RIFE - v4.6':
     model = 21
     TTA = False
     
-clip = core.ffms2.Source(source=f"{video_path}", fpsnum=-1, fpsden=1, cache=False)
+clip = core.lsmas.LWLibavSource(source=f"{video_path}", cache=0)
 
 clip = core.misc.SCDetect(clip=clip, threshold=0.200)
 
 clip = vs.core.resize.Bicubic(clip, format=vs.RGBS, matrix_in_s="709")
 
-clip = core.rife.RIFE(clip, model=model, factor_num=2, gpu_id=0, gpu_thread=2, tta=TTA, uhd=UHD, skip=True, sc=sceneDetection)
+clip = core.rife.RIFE(clip, model=model, factor_num=2, gpu_id=0, gpu_thread=2, tta=TTA, uhd=UHD, skip=frameskip, sc=sceneDetection)
 
 clip = vs.core.resize.Bicubic(clip, format=vs.YUV420P8, matrix_s="709")
 

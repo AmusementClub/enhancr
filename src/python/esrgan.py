@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from asyncio import streams
 import os
 import sys
 import vapoursynth as vs
@@ -21,7 +20,7 @@ else:
     tmp_dir = tempfile.gettempdir() + "/enhancr/"
 
 # load json with input file path and framerate
-with open(os.path.join(tmp_dir, "tmp.json"), encoding='utf-8') as f:
+with open(os.path.join(tmp), encoding='utf-8') as f:
     data = json.load(f)
     video_path = data['file']
     engine = data['engine']
@@ -31,7 +30,7 @@ with open(os.path.join(tmp_dir, "tmp.json"), encoding='utf-8') as f:
     tileWidth = int(data['tileWidth'])
 
     
-clip = core.ffms2.Source(source=f"{video_path}", fpsnum=-1, fpsden=1, cache=False)
+clip = core.lsmas.LWLibavSource(source=f"{video_path}", cache=0)
 
 clip = vs.core.resize.Bicubic(clip, format=vs.RGBS, matrix_in_s="709")
 

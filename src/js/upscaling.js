@@ -19,18 +19,6 @@ const terminal = document.getElementById("terminal-text");
 const enhancrPrefix = "[enhancr]";
 const progressSpan = document.getElementById("progress-span");
 
-function getTmpPath() {
-    if (process.platform == 'win32') {
-        return os.tmpdir() + "\\enhancr\\";
-    } else {
-        return os.tmpdir() + "/enhancr/";
-    }
-}
-let temp = getTmpPath();
-let previewPath = path.join(temp, '/preview');
-let previewDataPath = previewPath + '/data%02d.ts';
-const appDataPath = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Preferences' : process.env.HOME + "/.local/share")
-
 const blankModal = document.querySelector("#blank-modal");
 const modal = document.querySelector("#modal");
 const processOverlay = document.getElementById("process-overlay");
@@ -51,10 +39,18 @@ sessionStorage.setItem('stopped', 'false');
 
 class Upscaling {
     static async process(scale, dimensions, file, output, params, extension, engine, fileOut, index) {
+        let cacheInputText = document.getElementById('cache-input-text');
+        var cache = path.normalize(cacheInputText.textContent);
+
+        let previewPath = path.join(cache, '/preview');
+        let previewDataPath = previewPath + '/data%02d.ts';
+        const appDataPath = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Preferences' : process.env.HOME + "/.local/share")
+        
         let stopped = sessionStorage.getItem('stopped');
         if (!(stopped == 'true')) {
             // set flag for started upscaling process
             sessionStorage.setItem('status', 'upscaling');
+            sessionStorage.setItem('engine', engine);
 
             // render progresbar
             const loading = document.getElementById("loading");
@@ -69,16 +65,16 @@ class Upscaling {
             }
 
             // create paths if not existing
-            if (!fse.existsSync(temp)) {
-                fse.mkdirSync(temp);
+            if (!fse.existsSync(cache)) {
+                fse.mkdirSync(cache);
             };
 
             if (!fse.existsSync(output)) {
                 fse.mkdirSync(output)
             };
 
-            // clear temporary files
-            fse.emptyDirSync(temp);
+            // clear cacheorary files
+            fse.emptyDirSync(cache);
             console.log(enhancrPrefix + " tmp directory cleared");
 
             if (!fse.existsSync(previewPath)) {
@@ -88,7 +84,7 @@ class Upscaling {
             terminal.innerHTML += '\r\n' + enhancrPrefix + ' Preparing media for upscaling process..';
 
             // scan media for subtitles
-            const subsPath = path.join(temp, "subs.ass");
+            const subsPath = path.join(cache, "subs.ass");
             try {
                 terminal.innerHTML += '\r\n' + enhancrPrefix + ` Scanning media for subtitles..`;
                 execSync(`ffmpeg -y -loglevel error -i ${file} -map 0:s:0 ${subsPath}`);
@@ -97,7 +93,7 @@ class Upscaling {
             };
 
             // scan media for audio
-            const audioPath = path.join(temp, "audio.mka");
+            const audioPath = path.join(cache, "audio.mka");
             try {
                 terminal.innerHTML += '\r\n' + enhancrPrefix + ` Scanning media for audio..`;
                 execSync(`ffmpeg -y -loglevel quiet -i "${file}" -vn -c copy ${audioPath}`)
@@ -111,10 +107,17 @@ class Upscaling {
             }
             let trtexec = getTrtExecPath();
 
+            let fp16 = document.getElementById('fp16-check');
+
             //get onnx input path
             function getOnnxPath() {
                 if (!(document.getElementById('custom-model-check').checked)) {
-                    return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/RealESRGANv2/realesr-animevideov3.onnx");
+                    if (engine == 'Upscaling - RealESRGAN (TensorRT)') {
+                        return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/RealESRGANv2/realesr-animevideov3.onnx");
+                    } else if (engine == 'Upscaling - AnimeSR (TensorRT)') {
+                        return path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/animesr/animesr_v2.onnx");
+                    }
+
                 } else {
                     terminal.innerHTML += '\r\n[enhancr] Using custom model: ' + path.join(appDataPath, '/.enhancr/models/RealESRGAN', document.getElementById('custom-model-text').innerHTML);
                     return path.join(appDataPath, '/.enhancr/models/RealESRGAN', document.getElementById('custom-model-text').innerHTML);
@@ -135,16 +138,19 @@ class Upscaling {
             }
             let engineOut = getEnginePath();
             sessionStorage.setItem('engineOut', engineOut);
-            let fp16 = document.getElementById('fp16-check');
 
             // convert onnx to trt engine
-            if (!fse.existsSync(engineOut) && engine == 'Upscaling - RealESRGAN (TensorRT)') {
+            if (!fse.existsSync(engineOut) && engine == 'Upscaling - RealESRGAN (TensorRT)' || !fse.existsSync(engineOut) && engine == 'Upscaling - AnimeSR (TensorRT)') {
                 function convertToEngine() {
                     return new Promise(function (resolve) {
-                        if (fp16.checked == true) {
-                            var cmd = `${trtexec} --fp16 --onnx=${onnx} --minShapes=input:1x3x8x8 --optShapes=input:1x3x${shapeDimensionsOpt} --maxShapes=input:1x3x${shapeDimensionsMax} --saveEngine=${engineOut} --buildOnly --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                        if (engine == 'Upscaling - RealESRGAN (TensorRT)') {
+                            if (fp16.checked == true) {
+                                var cmd = `"${trtexec}" --fp16 --onnx="${onnx}" --minShapes=input:1x3x8x8 --optShapes=input:1x3x${shapeDimensionsOpt} --maxShapes=input:1x3x${shapeDimensionsMax} --saveEngine="${engineOut}" --verbose --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                            } else {
+                                var cmd = `"${trtexec}" --onnx="${onnx}" --minShapes=input:1x3x8x8 --optShapes=input:1x3x${shapeDimensionsOpt} --maxShapes=input:1x3x${shapeDimensionsMax} --saveEngine="${engineOut}" --verbose --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                            }
                         } else {
-                            var cmd = `${trtexec} --onnx=${onnx} --minShapes=input:1x3x8x8 --optShapes=input:1x3x${shapeDimensionsOpt} --maxShapes=input:1x3x${shapeDimensionsMax} --saveEngine=${engineOut} --buildOnly --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                            var cmd = `"${trtexec}" --onnx="${onnx}" --optShapes=input:1x6x${shapeDimensionsOpt} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
                         }
                         let term = spawn(cmd, [], { shell: true, stdio: ['inherit', 'pipe', 'pipe'], windowsHide: true });
                         process.stdout.write('');
@@ -180,14 +186,14 @@ class Upscaling {
                 terminal.innerHTML += '\r\n[enhancr] Trimming video with timestamps ' + '"' + sessionStorage.getItem(`trim${index}`) + '"';
                 let timestampStart = (sessionStorage.getItem(`trim${index}`)).split('-')[0];
                 let timestampEnd = (sessionStorage.getItem(`trim${index}`)).split('-')[1];
-                let trimmedOut = path.join(temp, path.parse(file).name + '.mkv');
+                let trimmedOut = path.join(cache, path.parse(file).name + '.mkv');
                 try {
                     function trim() {
                         return new Promise(function (resolve) {
                             if (document.getElementById("trim-check").checked) {
-                                var cmd = `${ffmpeg} -y -loglevel error -ss ${timestampStart} -to ${timestampEnd} -i "${file}" -c copy -c:v libx264 -crf 14 -max_interleave_delta 0 "${trimmedOut}"`;
+                                var cmd = `"${ffmpeg}" -y -loglevel error -ss ${timestampStart} -to ${timestampEnd} -i "${file}" -c copy -c:v libx264 -crf 14 -max_interleave_delta 0 "${trimmedOut}"`;
                             } else {
-                                var cmd = `${ffmpeg} -y -loglevel error -ss ${timestampStart} -to ${timestampEnd} -i "${file}" -c copy -max_interleave_delta 0 "${trimmedOut}"`;
+                                var cmd = `"${ffmpeg}" -y -loglevel error -ss ${timestampStart} -to ${timestampEnd} -i "${file}" -c copy -max_interleave_delta 0 "${trimmedOut}"`;
                             }
                             let term = spawn(cmd, [], {
                                 shell: true,
@@ -216,8 +222,8 @@ class Upscaling {
                 }
             }
 
-            // temp file for passing info to the AI
-            const jsonPath = path.join(temp, "tmp.json");
+            // cache file for passing info to the AI
+            const jsonPath = path.join(cache, "tmp.json");
             let json = {
                 file: file,
                 engine: engineOut,
@@ -242,6 +248,8 @@ class Upscaling {
                 model = "RealESRGAN"
             } else if (engine == "Upscaling - waifu2x (NCNN)") {
                 model = "waifu2x"
+            } else if (engine == "Upscaling - AnimeSR (TensorRT)") {
+                model = "AnimeSR"
             }
             // resolve output file path
             if (fileOut == null) {
@@ -258,6 +266,9 @@ class Upscaling {
                 }
                 if (engine == "Upscaling - waifu2x (NCNN)") {
                     return path.join(__dirname, '..', "/python/waifu2x.py");
+                }
+                if (engine == "Upscaling - AnimeSR (TensorRT)") {
+                    return path.join(__dirname, '..', "/python/animesr_trt.py");
                 }
             }
             var engine = pickEngine();
@@ -291,7 +302,7 @@ class Upscaling {
             }
             let height = getHeight();
 
-            let tmpOutPath = path.join(temp, Date.now() + extension);
+            let tmpOutPath = path.join(cache, Date.now() + extension);
             if (extension != ".mkv" && fse.existsSync(subsPath) == true) {
                 openModal(modal);
                 terminal.innerHTML += "\r\n[enhancr] Input video contains subtitles, but output container is not .mkv, cancelling.";
@@ -304,9 +315,9 @@ class Upscaling {
                     return new Promise(function (resolve) {
                         // if preview is enabled split out 2 streams from output
                         if (preview.checked == true) {
-                            var cmd = `${vspipe} -c y4m ${engine} - -p | ${ffmpeg} -y -loglevel error -i pipe: ${params} -s ${width}x${height} "${tmpOutPath}" -f hls -hls_list_size 0 -hls_flags independent_segments -hls_time 0.5 -hls_segment_type mpegts -hls_segment_filename "${previewDataPath}" -preset veryfast -vf scale=960:-1 "${path.join(previewPath, '/master.m3u8')}"`;
+                            var cmd = `"${vspipe}" --arg "tmp=${path.join(cache, "tmp.json")}" -c y4m ${engine} - -p | "${ffmpeg}" -y -loglevel error -i pipe: ${params} -s ${width}x${height} "${tmpOutPath}" -f hls -hls_list_size 0 -hls_flags independent_segments -hls_time 0.5 -hls_segment_type mpegts -hls_segment_filename "${previewDataPath}" -preset veryfast -vf scale=960:-1 "${path.join(previewPath, '/master.m3u8')}"`;
                         } else {
-                            var cmd = `${vspipe} -c y4m ${engine} - -p | ${ffmpeg} -y -loglevel error -i pipe: ${params} -s ${width}x${height} "${tmpOutPath}"`;
+                            var cmd = `"${vspipe}" --arg "tmp=${path.join(cache, "tmp.json")}" -c y4m ${engine} - -p | "${ffmpeg}" -y -loglevel error -i pipe: ${params} -s ${width}x${height} "${tmpOutPath}"`;
                         }
                         let term = spawn(cmd, [], { shell: true, stdio: ['inherit', 'pipe', 'pipe'], windowsHide: true });
                         // merge stdout & stderr & write data to terminal
@@ -320,43 +331,52 @@ class Upscaling {
                             sessionStorage.setItem('progress', data);
                         });
                         term.on("close", () => {
-                            terminal.innerHTML += `[enhancr] Finishing up upscaling..\r\n`;
-                            terminal.innerHTML += `[enhancr] Muxing in streams..\r\n`;
-
-                            // fix audio loss when muxing mkv
-                            let mkv = extension == ".mkv";
-                            let mkvFix = mkv ? "-max_interleave_delta 0" : "";
-
-                            let muxCmd = `${ffmpeg} -y -loglevel error -i "${file}" -i ${tmpOutPath} -map 1 -map 0 -map -0:v -codec copy ${mkvFix} "${sessionStorage.getItem('pipeOutPath')}"`;
-                            let muxTerm = spawn(muxCmd, [], { shell: true, stdio: ['inherit', 'pipe', 'pipe'], windowsHide: true });
-
-                            // merge stdout & stderr & write data to terminal
-                            process.stdout.write('');
-                            muxTerm.stdout.on('data', (data) => {
-                                process.stdout.write(`[Pipe] ${data}`);
-                            });
-                            muxTerm.stderr.on('data', (data) => {
-                                process.stderr.write(`[Pipe] ${data}`);
-                                terminal.innerHTML += '[Pipe] ' + data;
-                                sessionStorage.setItem('progress', data);
-                            });
-                            muxTerm.on("close", () => {
-                                // finish up upscaling process
-                                terminal.innerHTML += `[enhancr] Completed upscaling`;
-                                const upscalingBtnSpan = document.getElementById("upscaling-button-text");
-                                var notification = new Notification("Upscaling completed", { icon: "./assets/enhancr.png", body: path.basename(file) });
+                            let lines = terminal.value.match(/[^\r\n]+/g);
+                            let log = lines.slice(-10).reverse();
+                            // don't merge streams if an error occurs
+                            if (log.includes('[Pipe] pipe:: Invalid data found when processing input')) {
+                                terminal.innerHTML += `[enhancr] An error has occured.`;
                                 sessionStorage.setItem('status', 'done');
-                                successTitle.innerHTML = path.basename(sessionStorage.getItem("upscaleInputPath"));
-                                thumbModal.src = path.join(appDataPath, '/.enhancr/thumbs/thumbUpscaling.png?' + Date.now());
                                 resolve();
-                            });
+                            } else {
+                                terminal.innerHTML += `[enhancr] Finishing up upscaling..\r\n`;
+                                terminal.innerHTML += `[enhancr] Muxing in streams..\r\n`;
+
+                                // fix audio loss when muxing mkv
+                                let mkv = extension == ".mkv";
+                                let mkvFix = mkv ? "-max_interleave_delta 0" : "";
+
+                                let muxCmd = `"${ffmpeg}" -y -loglevel error -i "${file}" -i ${tmpOutPath} -map 1 -map 0 -map -0:v -codec copy ${mkvFix} "${sessionStorage.getItem('pipeOutPath')}"`;
+                                let muxTerm = spawn(muxCmd, [], { shell: true, stdio: ['inherit', 'pipe', 'pipe'], windowsHide: true });
+
+                                // merge stdout & stderr & write data to terminal
+                                process.stdout.write('');
+                                muxTerm.stdout.on('data', (data) => {
+                                    process.stdout.write(`[Pipe] ${data}`);
+                                });
+                                muxTerm.stderr.on('data', (data) => {
+                                    process.stderr.write(`[Pipe] ${data}`);
+                                    terminal.innerHTML += '[Pipe] ' + data;
+                                    sessionStorage.setItem('progress', data);
+                                });
+                                muxTerm.on("close", () => {
+                                    // finish up upscaling process
+                                    terminal.innerHTML += `[enhancr] Completed upscaling`;
+                                    const upscalingBtnSpan = document.getElementById("upscaling-button-text");
+                                    var notification = new Notification("Upscaling completed", { icon: "./assets/enhancr.png", body: path.basename(file) });
+                                    sessionStorage.setItem('status', 'done');
+                                    successTitle.innerHTML = path.basename(sessionStorage.getItem("upscaleInputPath"));
+                                    thumbModal.src = path.join(appDataPath, '/.enhancr/thumbs/thumbUpscaling.png?' + Date.now());
+                                    resolve();
+                                });
+                            }
                         });
                     });
                 }
                 await upscale();
-                // clear temporary files
-                // fse.emptyDirSync(temp);
-                console.log("Cleared temporary files");
+                // clear cacheorary files
+                // fse.emptyDirSync(cache);
+                console.log("Cleared cacheorary files");
                 // timeout for 2 seconds after upscale
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }

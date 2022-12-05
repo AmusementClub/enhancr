@@ -132,7 +132,7 @@ fs.readFile(path.join(appDataPath, '/.enhancr/settings.json'), (err, settings) =
   if (err) throw err;
   let json = JSON.parse(settings);
 
-  if (json.settings[0].rpc == true) {
+  if (json.settings[0].rpc == true && false) {
     // discord rpc
     var client = new (require("easy-presence").EasyPresence)("1046415937886228558");
     client.on("connected", () => {

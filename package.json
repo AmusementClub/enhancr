@@ -56,7 +56,6 @@
     "aspect-ratio": "^2.1.1",
     "axios": "^0.27.2",
     "colors": "^1.4.0",
-    "easy-presence": "^1.2.0-oops1",
     "electron-acrylic-window": "^0.5.11",
     "electron-squirrel-startup": "^1.0.0",
     "find-process": "^1.4.7",

@@ -1,7 +1,7 @@
 name: Build/release
 
 on:
-  #push:
+  push:
   workflow_dispatch:
     inputs:
       tag:
@@ -40,6 +40,7 @@ jobs:
            mv ffmpeg-*-essentials_build/bin/ffmpeg.exe out/enhancr-win32-x64/resources/app/src/python/ffmpeg/
 
       - name: Package release (app)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
         run: |
            cd out
            7z a -t7z -mx=5 ../app-only-win64.7z enhancr-win32-x64

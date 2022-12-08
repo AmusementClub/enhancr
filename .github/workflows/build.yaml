@@ -40,10 +40,16 @@ jobs:
            mv ffmpeg-*-essentials_build/bin/ffmpeg.exe out/enhancr-win32-x64/resources/app/src/python/ffmpeg/
 
       - name: Package release (app)
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
         run: |
            cd out
            7z a -t7z -mx=5 ../app-only-win64.7z enhancr-win32-x64
+
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-only
+          path: app-only-win64.7z
+          retention-days: 30
 
       - name: Integrate VS portable
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''

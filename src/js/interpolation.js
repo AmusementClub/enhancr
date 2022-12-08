@@ -119,7 +119,7 @@ class Interpolation {
 
             // get engine path
             function getEnginePath() {
-                return path.join(appDataPath, '/.enhancr/models/engine', 'cain' + '-' + path.basename(onnx, '.onnx') + '-' + width + 'x' + height + '-' + fp + '.engine');
+                return path.join(appDataPath, '/.enhancr/models/engine', 'cain' + '_' + path.basename(onnx, '.onnx') + '_' + width + 'x' + height + '_' + fp + '.engine');
             }
             let engineOut = getEnginePath();
             sessionStorage.setItem('engineOut', engineOut);
@@ -264,7 +264,6 @@ class Interpolation {
                                 terminal.innerHTML += data;
                             });
                             term.on("close", () => {
-                                ipcRenderer.send('rpc-done');
                                 file = trimmedOut;
                                 terminal.innerHTML += '\r\n[enhancr] Trimmed video successfully.';
                                 resolve();
@@ -405,7 +404,7 @@ class Interpolation {
 
                                 let out = sessionStorage.getItem('pipeOutPath');
 
-                                let muxCmd = `"${ffmpeg}" -y -loglevel error -i "${file}" -i ${tmpOutPath} -map 1 -map 0 -map -0:v -codec copy ${mkvFix} "${out}"`;
+                                let muxCmd = `"${ffmpeg}" -y -loglevel error -i "${file}" -i "${tmpOutPath}" -map 1 -map 0 -map -0:v -codec copy ${mkvFix} "${out}"`;
                                 let muxTerm = spawn(muxCmd, [], {
                                     shell: true,
                                     stdio: ['inherit', 'pipe', 'pipe'],
@@ -431,6 +430,7 @@ class Interpolation {
                                         body: path.basename(file)
                                     });
                                     sessionStorage.setItem('status', 'done');
+                                    ipcRenderer.send('rpc-done');
                                     successTitle.innerHTML = path.basename(sessionStorage.getItem("inputPath"));
                                     thumbModal.src = path.join(appDataPath, '/.enhancr/thumbs/thumbInterpolation.png?' + Date.now());
                                     resolve();
@@ -442,7 +442,7 @@ class Interpolation {
                 await interpolate();
                 // clear cacheorary files
                 fse.emptyDirSync(cache);
-                console.log("Cleared cacheorary files");
+                console.log("Cleared temporary files");
                 // timeout for 2 seconds after interpolation
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }

@@ -29,7 +29,7 @@ const preview = document.getElementById('preview-check');
 sessionStorage.setItem('stopped', 'false');
 
 class Interpolation {
-    static async process(file, model, output, params, extension, engine, fileOut, index) {
+    static async process(file, model, output, params, extension, engine, dimensions, fileOut, index) {
         let cacheInputText = document.getElementById('cache-input-text');
         var cache = path.normalize(cacheInputText.textContent);
 
@@ -98,9 +98,8 @@ class Interpolation {
             let trtexec = getTrtExecPath();
 
             // get width & height
-            let dimensions = document.getElementById('dimensions');
-            var width = parseInt((dimensions.innerHTML).split(' x')[0]);
-            var height = parseInt(((dimensions.innerHTML).split('x ')[1]).split(' ')[0]);
+            var width = parseInt((dimensions).split(' x')[0]);
+            var height = parseInt(((dimensions).split('x ')[1]).split(' ')[0]);
             var padding = false;
             var roundedWidth;
             var roundedHeight;
@@ -132,17 +131,8 @@ class Interpolation {
                 height = roundedHeight
             }
 
-            if (systemPython == true) {
-                var python = "python";
-            }
-            else {
-                var python = path.join(__dirname, '..', "\\python\\bin\\python.exe");
-            }
-
-            var convert = path.join(__dirname, '..', "\\python/torch/convert.py");
             var cainModel = document.getElementById('model-span').innerHTML == 'RVP - v1.0';
             var onnx = cainModel ? path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/cain-rvpv1/rvpv1.onnx") : path.join(__dirname, '..', "/python/bin/vapoursynth64/plugins/models/cain-cvpv6/cvpv6.onnx");
-            var groups = model ? 2 : 3;
 
             // get engine path
             function getEnginePath() {

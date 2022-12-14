@@ -1,5 +1,7 @@
 const { ipcRenderer } = require('electron');
 const { app } = require('@electron/remote');
+const os = require('os');
+const path = require('path');
 
 // Elements
 // const lightModeLayer = document.getElementById('light-mode');
@@ -37,7 +39,18 @@ function loadProject(projectPath) {
 
 const recentProjects = parseJSON(localStorage.getItem('projects'), []);
 
-if (navigator.userAgentData.platform === 'Linux') document.body.style.backgroundColor = '#333333';
+const blurLayer = document.getElementById('light-mode')
+const border = document.getElementById('win10-border');
+
+// change blur on win 11/10
+let winOsBuild = parseInt(os.release().split(".")[2]);
+if (winOsBuild >= 22000 && process.platform == 'win32') {
+    blurLayer.style.visibility = 'hidden';
+    border.style.visibility = 'hidden';
+} else {
+    blurLayer.style.visibility = 'visible';
+    border.style.visibility = 'visible';
+}
 
 // Button functionality
 createToggle.addEventListener('click', () => {
@@ -84,8 +97,8 @@ recentProjects.forEach((project, i) => {
     const delay = 1 + (i * 0.3);
 
     recentItem.style.animationDelay = `${delay}s`;
-    // path.basename alternative
-    recentItem.querySelector('.project-title').textContent = project.split(/[\\/]/).pop();
+
+    recentItem.querySelector('.project-title').textContent = path.parse(project).name;
     recentItem.querySelector('.project-path').textContent = project;
 
     recentItem.addEventListener('click', () => {

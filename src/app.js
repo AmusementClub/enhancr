@@ -87,7 +87,7 @@ app.once('ready', () => {
     // eslint-disable-next-line default-case
     switch (process.platform) {
         case 'win32': {
-            if (!isWin11) windowOptions.transparent = false;
+            if (!isWin11) windowOptions.transparent = true;
 
             if (settings.disableBlur) break;
             const effect = isWin11 ? 'acrylic' : 'blur';
@@ -138,13 +138,13 @@ app.once('ready', () => {
     if (settings.disableBlur) {
         // Appear seamless when changing pages, but corners may be visible for a few frames.
         mainWindow.webContents.on('will-navigate', () => {
-            mainWindow.setBackgroundColor('#242424');
+            mainWindow.setBackgroundColor('#222222');
         });
 
         // #1D1D1D = #242424 + rgb(28, 28, 28, .85)
         mainWindow.webContents.on('did-finish-load', () => {
             mainWindow.webContents.insertCSS('#light-mode { background: #1D1D1D !important }').then(() => {
-                mainWindow.setBackgroundColor('#00000000');
+                mainWindow.setBackgroundColor('#222222');
             });
         });
     }

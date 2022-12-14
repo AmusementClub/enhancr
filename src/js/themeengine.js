@@ -24,6 +24,10 @@ var toggleShapes = document.getElementById('shape-check');
 var toggleTiling = document.getElementById('tiling-check');
 var customModelCheck = document.getElementById('custom-model-check');
 var pythonCheck = document.getElementById('python-check');
+var trimCheck = document.getElementById('trim-check');
+var hwencodeCheck = document.getElementById('hwencode-check');
+var sensitivityCheck = document.getElementById('sensitivity-check');
+var unsupportedCheck = document.getElementById("unsupported-check");
 
 var mediaInfoText = document.getElementsByClassName("info-text");
 var tooltips = document.getElementsByClassName("tooltip-text");
@@ -59,6 +63,11 @@ function blueSelect() {
     customModelCheck.style.setProperty('--toggle-color', "#1e5cce");
     scCheck.style.setProperty('--toggle-color', "#1e5cce");
     skipCheck.style.setProperty('--toggle-color', "#1e5cce");
+    pythonCheck.style.setProperty('--toggle-color', "#1e5cce");
+    trimCheck.style.setProperty('--toggle-color', "#1e5cce");
+    hwencodeCheck.style.setProperty('--toggle-color', "#1e5cce");
+    sensitivityCheck.style.setProperty('--toggle-color', "#1e5cce");
+    unsupportedCheck.style.setProperty('--toggle-color', "#1e5cce");
     pythonCheck.style.setProperty('--toggle-color', "#1e5cce");
     progressDone.style.setProperty('--bar-color', "#1e5cce");
 
@@ -118,6 +127,10 @@ function pinkSelect() {
     progressDone.style.setProperty('--bar-color', "#ce1e6c");
     scCheck.style.setProperty('--toggle-color', "#ce1e6c");
     skipCheck.style.setProperty('--toggle-color', "#ce1e6c");
+    trimCheck.style.setProperty('--toggle-color', "#ce1e6c");
+    hwencodeCheck.style.setProperty('--toggle-color', "#ce1e6c");
+    sensitivityCheck.style.setProperty('--toggle-color', "#ce1e6c");
+    unsupportedCheck.style.setProperty('--toggle-color', "#ce1e6c");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#ce1e6c";
@@ -174,6 +187,10 @@ function greenSelect() {
     progressDone.style.setProperty('--bar-color', "#9ece1e");
     scCheck.style.setProperty('--toggle-color', "#9ece1e");
     skipCheck.style.setProperty('--toggle-color', "#9ece1e");
+    trimCheck.style.setProperty('--toggle-color', "#9ece1e");
+    hwencodeCheck.style.setProperty('--toggle-color', "#9ece1e");
+    sensitivityCheck.style.setProperty('--toggle-color', "#9ece1e");
+    unsupportedCheck.style.setProperty('--toggle-color', "#9ece1e");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#9ece1e";
@@ -230,6 +247,10 @@ function purpleSelect() {
     progressDone.style.setProperty('--bar-color', "#601ece");
     scCheck.style.setProperty('--toggle-color', "#601ece");
     skipCheck.style.setProperty('--toggle-color', "#601ece");
+    trimCheck.style.setProperty('--toggle-color', "#601ece");
+    hwencodeCheck.style.setProperty('--toggle-color', "#601ece");
+    sensitivityCheck.style.setProperty('--toggle-color', "#601ece");
+    unsupportedCheck.style.setProperty('--toggle-color', "#601ece");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#601ece";
@@ -287,6 +308,10 @@ function orangeSelect() {
     progressDone.style.setProperty('--bar-color', "#e36812");
     scCheck.style.setProperty('--toggle-color', "#e36812");
     skipCheck.style.setProperty('--toggle-color', "#e36812");
+    trimCheck.style.setProperty('--toggle-color', "#e36812");
+    hwencodeCheck.style.setProperty('--toggle-color', "#e36812");
+    sensitivityCheck.style.setProperty('--toggle-color', "#e36812");
+    unsupportedCheck.style.setProperty('--toggle-color', "#e36812");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#e36812";
@@ -343,6 +368,10 @@ function yellowSelect() {
     progressDone.style.setProperty('--bar-color', "#cece1b");
     scCheck.style.setProperty('--toggle-color', "#cece1b");
     skipCheck.style.setProperty('--toggle-color', "#cece1b");
+    trimCheck.style.setProperty('--toggle-color', "#cece1b");
+    hwencodeCheck.style.setProperty('--toggle-color', "#cece1b");
+    sensitivityCheck.style.setProperty('--toggle-color', "#cece1b");
+    unsupportedCheck.style.setProperty('--toggle-color', "#cece1b");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#cece1b";
@@ -399,6 +428,10 @@ function redSelect() {
     progressDone.style.setProperty('--bar-color', "#ce2a1e");
     scCheck.style.setProperty('--toggle-color', "#ce2a1e");
     skipCheck.style.setProperty('--toggle-color', "#ce2a1e");
+    trimCheck.style.setProperty('--toggle-color', "#ce2a1e");
+    hwencodeCheck.style.setProperty('--toggle-color', "#ce2a1e");
+    sensitivityCheck.style.setProperty('--toggle-color', "#ce2a1e");
+    unsupportedCheck.style.setProperty('--toggle-color', "#ce2a1e");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#ce2a1e";
@@ -455,6 +488,10 @@ function sandSelect() {
     progressDone.style.setProperty('--bar-color', "#E9DAC1");
     scCheck.style.setProperty('--toggle-color', "#E9DAC1");
     skipCheck.style.setProperty('--toggle-color', "#E9DAC1");
+    trimCheck.style.setProperty('--toggle-color', "#E9DAC1");
+    hwencodeCheck.style.setProperty('--toggle-color', "#E9DAC1");
+    sensitivityCheck.style.setProperty('--toggle-color', "#E9DAC1");
+    unsupportedCheck.style.setProperty('--toggle-color', "#E9DAC1");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#E9DAC1";
@@ -511,6 +548,10 @@ function mintSelect() {
     progressDone.style.setProperty('--bar-color', "#8FE3CF");
     scCheck.style.setProperty('--toggle-color', "#8FE3CF");
     skipCheck.style.setProperty('--toggle-color', "#8FE3CF");
+    trimCheck.style.setProperty('--toggle-color', "#8FE3CF");
+    hwencodeCheck.style.setProperty('--toggle-color', "#8FE3CF");
+    sensitivityCheck.style.setProperty('--toggle-color', "#8FE3CF");
+    unsupportedCheck.style.setProperty('--toggle-color', "#8FE3CF");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#8FE3CF";
@@ -567,6 +608,10 @@ function salmonSelect() {
     progressDone.style.setProperty('--bar-color', "#FFB3B3");
     scCheck.style.setProperty('--toggle-color', "#FFB3B3");
     skipCheck.style.setProperty('--toggle-color', "#FFB3B3");
+    trimCheck.style.setProperty('--toggle-color', "#FFB3B3");
+    hwencodeCheck.style.setProperty('--toggle-color', "#FFB3B3");
+    sensitivityCheck.style.setProperty('--toggle-color', "#FFB3B3");
+    unsupportedCheck.style.setProperty('--toggle-color', "#FFB3B3");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#FFB3B3";
@@ -623,6 +668,10 @@ function eggSelect() {
     progressDone.style.setProperty('--bar-color', "#FFEF82");
     scCheck.style.setProperty('--toggle-color', "#FFEF82");
     skipCheck.style.setProperty('--toggle-color', "#FFEF82");
+    trimCheck.style.setProperty('--toggle-color', "#FFEF82");
+    hwencodeCheck.style.setProperty('--toggle-color', "#FFEF82");
+    sensitivityCheck.style.setProperty('--toggle-color', "#FFEF82");
+    unsupportedCheck.style.setProperty('--toggle-color', "#FFEF82");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#FFEF82";
@@ -679,6 +728,10 @@ function lavenderSelect() {
     progressDone.style.setProperty('--bar-color', "#AFB4FF");
     scCheck.style.setProperty('--toggle-color', "#AFB4FF");
     skipCheck.style.setProperty('--toggle-color', "#AFB4FF");
+    trimCheck.style.setProperty('--toggle-color', "#AFB4FF");
+    hwencodeCheck.style.setProperty('--toggle-color', "#AFB4FF");
+    sensitivityCheck.style.setProperty('--toggle-color', "#AFB4FF");
+    unsupportedCheck.style.setProperty('--toggle-color', "#AFB4FF");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#AFB4FF";
@@ -735,6 +788,10 @@ function roseSelect() {
     progressDone.style.setProperty('--bar-color', "#FF5D5D");
     scCheck.style.setProperty('--toggle-color', "#FF5D5D");
     skipCheck.style.setProperty('--toggle-color', "#FF5D5D");
+    trimCheck.style.setProperty('--toggle-color', "#FF5D5D");
+    hwencodeCheck.style.setProperty('--toggle-color', "#FF5D5D");
+    sensitivityCheck.style.setProperty('--toggle-color', "#FF5D5D");
+    unsupportedCheck.style.setProperty('--toggle-color', "#FF5D5D");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#FF5D5D";
@@ -791,6 +848,10 @@ function greySelect() {
     progressDone.style.setProperty('--bar-color', "#696969");
     scCheck.style.setProperty('--toggle-color', "#696969");
     skipCheck.style.setProperty('--toggle-color', "#696969");
+    trimCheck.style.setProperty('--toggle-color', "#696969");
+    hwencodeCheck.style.setProperty('--toggle-color', "#696969");
+    sensitivityCheck.style.setProperty('--toggle-color', "#696969");
+    unsupportedCheck.style.setProperty('--toggle-color', "#696969");
 
     for (var i = 0; i < queueProgressBar.length; i++) {
         queueProgressBar[i].style.background = "#696969";

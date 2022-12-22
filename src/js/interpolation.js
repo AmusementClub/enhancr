@@ -52,7 +52,8 @@ class Interpolation {
                 openModal(blankModal);
                 terminal.innerHTML += "\r\n[Error] Output path not specified, cancelling.";
                 sessionStorage.setItem('status', 'error');
-                processOverlay.style.visibility = "hidden";
+                loading.style.visibility = "hidden";
+                throw new Error('Output path not specified');
             }
 
             // create paths if not existing
@@ -150,9 +151,9 @@ class Interpolation {
                 function convertToEngine() {
                     return new Promise(function (resolve) {
                             if (fp16.checked == true) {
-                                var engineCmd = `"${trtexec}" --fp16 --onnx="${onnx}" --optShapes=input:1x6x${height}x${width} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                                var engineCmd = `"${trtexec}" --fp16 --onnx="${onnx}" --optShapes=input:1x6x${height}x${width} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT --buildOnly`;
                             } else {
-                                var engineCmd = `"${trtexec}" --onnx="${onnx}" --optShapes=input:1x6x${height}x${width} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                                var engineCmd = `"${trtexec}" --onnx="${onnx}" --optShapes=input:1x6x${height}x${width} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT --buildOnly`;
                             }
                             let engineTerm = spawn(engineCmd, [], {
                                 shell: true,
@@ -213,9 +214,9 @@ class Interpolation {
                 function convertToEngine() {
                     return new Promise(function (resolve) {
                         if (fp16.checked == true) {
-                            var cmd = `"${trtexec}" --fp16 --onnx="${rifeOnnx}" --minShapes=input:1x8x8x8 --optShapes=input:1x8x${shapeDimensionsOpt} --maxShapes=input:1x8x${shapeDimensionsMax} --saveEngine="${rifeEngine}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                            var cmd = `"${trtexec}" --fp16 --onnx="${rifeOnnx}" --minShapes=input:1x8x8x8 --optShapes=input:1x8x${shapeDimensionsOpt} --maxShapes=input:1x8x${shapeDimensionsMax} --saveEngine="${rifeEngine}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT --buildOnly`;
                         } else {
-                            var cmd = `"${trtexec}" --onnx="${rifeOnnx}" --minShapes=input:1x8x8x8 --optShapes=input:1x8x720x1280${shapeDimensionsOpt} --maxShapes=input:1x8x${shapeDimensionsMax} --saveEngine="${rifeEngine}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                            var cmd = `"${trtexec}" --onnx="${rifeOnnx}" --minShapes=input:1x8x8x8 --optShapes=input:1x8x720x1280${shapeDimensionsOpt} --maxShapes=input:1x8x${shapeDimensionsMax} --saveEngine="${rifeEngine}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT --buildOnly`;
                         }
                         let term = spawn(cmd, [], {
                             shell: true,
@@ -344,16 +345,16 @@ class Interpolation {
             // determine ai engine
             function pickEngine() {
                 if (engine == "Channel Attention - CAIN (TensorRT)") {
-                    return path.join(__dirname, '..', "/python/cain_trt.py");
+                    return path.join(__dirname, '..', "/python/inference/cain_trt.py");
                 }
                 if (engine == "Channel Attention - CAIN (NCNN)") {
-                    return path.join(__dirname, '..', "/python/cain.py");
+                    return path.join(__dirname, '..', "/python/inference/cain.py");
                 }
                 if (engine == "Optical Flow - RIFE (NCNN)") {
-                    return path.join(__dirname, '..', "/python/rife.py");
+                    return path.join(__dirname, '..', "/python/inference/rife.py");
                 }
                 if (engine == "Optical Flow - RIFE (TensorRT)") {
-                    return path.join(__dirname, '..', "/python/rife_trt.py");
+                    return path.join(__dirname, '..', "/python/inference/rife_trt.py");
                 }
             }
             var engine = pickEngine();
@@ -381,7 +382,7 @@ class Interpolation {
                 openModal(modal);
                 terminal.innerHTML += "\r\n[Error] Input video contains subtitles, but output container is not .mkv, cancelling.";
                 sessionStorage.setItem('status', 'error');
-                processOverlay.style.visibility = "hidden";
+                throw new Error('Input video contains subtitles, but output container is not .mkv');
             } else {
                 terminal.innerHTML += '\r\n' + enhancrPrefix + ` Starting interpolation process..` + '\r\n';
 

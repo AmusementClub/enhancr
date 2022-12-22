@@ -61,7 +61,7 @@ class Restoration {
                 openModal(blankModal);
                 terminal.innerHTML += "\r\n[Error] Output path not specified, cancelling.";
                 sessionStorage.setItem('status', 'error');
-                processOverlay.style.visibility = "hidden";
+                throw new Error('Output path not specified');
             }
 
             // create paths if not existing
@@ -146,9 +146,9 @@ class Restoration {
                 function convertToEngine() {
                     return new Promise(function (resolve) {
                         if (fp16.checked == true) {
-                            var cmd = `"${trtexec}" --fp16 --onnx="${onnx}" --minShapes=input:1x4x8x8 --optShapes=input:1x4x${shapeDimensionsOpt} --maxShapes=input:1x4x${shapeDimensionsMax} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                            var cmd = `"${trtexec}" --fp16 --onnx="${onnx}" --minShapes=input:1x4x8x8 --optShapes=input:1x4x${shapeDimensionsOpt} --maxShapes=input:1x4x${shapeDimensionsMax} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT --buildOnly`;
                         } else {
-                            var cmd = `"${trtexec}" --onnx="${onnx}" --minShapes=input:1x4x8x8 --optShapes=input:1x4x${shapeDimensionsOpt} --maxShapes=input:1x4x${shapeDimensionsMax} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT`;
+                            var cmd = `"${trtexec}" --onnx="${onnx}" --minShapes=input:1x4x8x8 --optShapes=input:1x4x${shapeDimensionsOpt} --maxShapes=input:1x4x${shapeDimensionsMax} --saveEngine="${engineOut}" --tacticSources=+CUDNN,-CUBLAS,-CUBLAS_LT --buildOnly`;
                         }
                         let term = spawn(cmd, [], { shell: true, stdio: ['inherit', 'pipe', 'pipe'], windowsHide: true });
                         process.stdout.write('');
@@ -270,13 +270,13 @@ class Restoration {
             // determine ai engine
             function pickEngine() {
                 if (engine == "Restoration - DPIR (TensorRT)") {
-                    return path.join(__dirname, '..', "/python/dpir.py");
+                    return path.join(__dirname, '..', "/python/inference/dpir.py");
                 }
                 if (engine == "Restoration - AnimeVideo (TensorRT)") {
-                    return path.join(__dirname, '..', "python/esrgan.py");
+                    return path.join(__dirname, '..', "python/inference/esrgan.py");
                 }
                 if (engine == "Restoration - AnimeVideo (NCNN)") {
-                    return path.join(__dirname, '..', "python/esrgan_ncnn.py");
+                    return path.join(__dirname, '..', "python/inference/esrgan_ncnn.py");
                 }
             }
             var engine = pickEngine();
@@ -318,7 +318,7 @@ class Restoration {
                 openModal(modal);
                 terminal.innerHTML += "\r\n[enhancr] Input video contains subtitles, but output container is not .mkv, cancelling.";
                 sessionStorage.setItem('status', 'error');
-                processOverlay.style.visibility = "hidden";
+                throw new Error('Input video contains subtitles, but output container is not .mkv');
             } else {
                 terminal.innerHTML += '\r\n' + enhancrPrefix + ` Starting restoration process..` + '\r\n';
 

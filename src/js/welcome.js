@@ -2,9 +2,10 @@ const { ipcRenderer } = require('electron');
 const { app } = require('@electron/remote');
 const os = require('os');
 const path = require('path');
+const fs = require('fs-extra');
 
 // Elements
-// const lightModeLayer = document.getElementById('light-mode');
+const lightModeLayer = document.getElementById('light-mode');
 const createToggle = document.getElementById('hover-create-toggle');
 const openToggle = document.getElementById('hover-open-toggle');
 
@@ -17,10 +18,10 @@ const recentItemTemplate = document.getElementById('recent-item-template');
     appLogo[0].style.animation = '';
 }); */
 
-/* if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
     console.log('light mode detected');
     lightModeLayer.style.visibility = 'visible';
-} */
+}
 
 function parseJSON(str, defaults) {
     if (!str) return defaults;
@@ -109,8 +110,8 @@ recentProjects.forEach((project, i) => {
     recentItem.addEventListener('click', () => {
         loadProject(project);
     });
-
-    recentsContainer.appendChild(clonedRecentItem);
+    // only render recentItem if project still exists
+    if (fs.existsSync(project)) recentsContainer.appendChild(clonedRecentItem);
 });
 
 // TODO: find a better way to get version without remote

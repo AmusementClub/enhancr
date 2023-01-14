@@ -62,14 +62,15 @@ jobs:
         run: |
            curl -s -o vs_portable.7z -L https://github.com/AmusementClub/tools/releases/download/2022H2.1b2p/vapoursynth_portable_22H2.1b2p_full.7z
            7z x vs_portable.7z
-           mv vapoursynth/* out/enhancr-win32-x64/resources/app/src/python/bin/
+           mkdir -p out/enhancr-win32-x64/resources/app/src/python/env/
+           mv vapoursynth/* out/enhancr-win32-x64/resources/app/src/python/env/
            rm vs_portable.7z
 
       - name: Package release (VS)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
         run: |
            cd out
-           7z a -t7z -mx=5 ../vs-only-win64.7z enhancr-win32-x64/resources/app/src/python/bin/
+           7z a -t7z -mx=5 ../vs-only-win64.7z enhancr-win32-x64/resources/app/src/python/env/
 
       - name: Package everything
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''

@@ -100,7 +100,7 @@ class Upscaling {
 
             //get trtexec path
             function getTrtExecPath() {
-                return path.join(__dirname, '..', "/python/env/Library/bin/trtexec.exe");
+                return path.join(__dirname, '..', "/python/env/vapoursynth64/plugins/vsmlrt-cuda/trtexec.exe");
             }
             let trtexec = getTrtExecPath();
 

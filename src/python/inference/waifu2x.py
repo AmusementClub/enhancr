@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-from decimal import Decimal
 import os
 import sys
-from decimal import Decimal
-from fractions import Fraction
 import vapoursynth as vs
 import platform
 import tempfile
@@ -11,10 +8,10 @@ import json
 import vsmlrt
 ossystem = platform.system()
 
-core = vs.core
+from multiprocessing import cpu_count
 
-vs_api_below4 = vs.__api_version__.api_major < 4
-core.num_threads = 8
+ossystem = platform.system()
+core = vs.core
 
 if ossystem == "Windows":
     tmp_dir = tempfile.gettempdir() + "\\enhancr\\"
@@ -27,6 +24,10 @@ with open(os.path.join(tmp), encoding='utf-8') as f:
     video_path = data['file']
     engine = data['engine']
     streams = data['streams']
+
+def threading():
+  return int(streams) if int(streams) < cpu_count() else cpu_count()
+core.num_threads = cpu_count()
     
 clip = core.lsmas.LWLibavSource(source=f"{video_path}", cache=0)
 
@@ -37,5 +38,5 @@ clip = vsmlrt.Waifu2x(clip, noise=2, scale=2, model=vsmlrt.Waifu2xModel.upconv_7
 
 clip = vs.core.resize.Bicubic(clip, format=vs.YUV420P8, matrix_s="709")
 
-print("Starting video output..", file=sys.stderr)
+print("Starting video output | Threads: " + str(cpu_count()) + " | " + "Streams: " + str(threading()), file=sys.stderr)
 clip.set_output()

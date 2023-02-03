@@ -169,7 +169,7 @@ function loadInterpolation() {
     VP9Btn.style.color = "#d0d0d0";
     LosslessBtn.style.color = "#1e5cce";
   }
-  if (!data.interpolation[0].params == "") {
+  if (!(data.interpolation[0].params == "")) {
     ffmpegParams.value = data.interpolation[0].params;
   }
   // fill output container input
@@ -425,7 +425,7 @@ function loadUpscaling() {
     LosslessBtnUp.style.color = "#1e5cce";
   }
 
-  if (!data.upscaling[0].params == "") {
+  if (!(data.upscaling[0].params == "")) {
     ffmpegParams.value = data.upscaling[0].params;
   }
 
@@ -607,7 +607,7 @@ function loadRestoration() {
     LosslessBtnRes.style.color = "#1e5cce";
   }
 
-  if (!data.restoration[0].params == "") {
+  if (!(data.restoration[0].params == "")) {
     ffmpegParams.value = data.restoration[0].params;
   }
 
@@ -624,9 +624,9 @@ function loadRestoration() {
   if (data.restoration[0].engine === "dpir") {
     restorationEngineSpan.textContent = "Restoration - DPIR (TensorRT)";
   } else if (data.restoration[0].engine === "animevideo") {
-    restorationEngineSpan.textContent = "Restoration - AnimeVideo (TensorRT)";
+    restorationEngineSpan.textContent = "Restoration - RealESRGAN (1x) (TensorRT)";
   } else {
-    restorationEngineSpan.textContent = "Restoration - AnimeVideo (NCNN)";
+    restorationEngineSpan.textContent = "Restoration - RealESRGAN (1x) (NCNN)";
   }
 
   const modelSpanRes = document.getElementById('model-span-restoration');

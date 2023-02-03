@@ -1,7 +1,15 @@
 const { PromisePool } = require('@supercharge/promise-pool')
 const path = require("path");
 const remote = require('@electron/remote');
-const axios = require('axios');
+
+let axios;
+
+if (remote.app.isPackaged == false) {
+  axios = require("axios");
+} else {
+  axios = require(path.join(process.resourcesPath, '/app.asar.unpacked/node_modules/axios/dist/browser/axios.cjs'))
+}
+
 const fs = require('fs-extra');
 const os = require('os');
 
@@ -32,8 +40,17 @@ const find = require('find-process');
 const shell = require("electron").shell;
 const ffmpeg = require('fluent-ffmpeg');
 
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-const ffprobePath = require('@ffprobe-installer/ffprobe').path;
+let ffmpegPath;
+let ffprobePath;
+
+if (remote.app.isPackaged == false) {
+  ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+  ffprobePath = require('@ffprobe-installer/ffprobe').path;
+} else {
+  ffmpegPath = require('@ffmpeg-installer/ffmpeg').path.replace('app.asar', 'app.asar.unpacked');
+  ffprobePath = require('@ffprobe-installer/ffprobe').path.replace('app.asar', 'app.asar.unpacked');
+}
+
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
@@ -678,7 +695,7 @@ async function addToQueueInterpolation() {
 
   if (sessionStorage.getItem("multiInput") == "true") {
     let file = JSON.parse(sessionStorage.getItem('interpolationMultiInput'))
-    for (var i=0; i< file.length; i++) {
+    for (var i = 0; i < file.length; i++) {
       queue.push({
         mode: 'interpolation',
         file: file[i],
@@ -725,7 +742,7 @@ async function addToQueueUpscaling() {
 
   if (sessionStorage.getItem("multiInput") == "true") {
     let file = JSON.parse(sessionStorage.getItem('upscalingMultiInput'))
-    for (var i=0; i< file.length; i++) {
+    for (var i = 0; i < file.length; i++) {
       queue.push({
         mode: 'upscaling',
         file: file[i],
@@ -771,7 +788,7 @@ function addToQueueRestoration() {
 
   if (sessionStorage.getItem("multiInput") == "true") {
     let file = JSON.parse(sessionStorage.getItem('restorationMultiInput'))
-    for (var i=0; i< file.length; i++) {
+    for (var i = 0; i < file.length; i++) {
       queue.push({
         mode: 'restoration',
         file: file[i],
@@ -890,7 +907,7 @@ try {
             sessionStorage.setItem('stopFlag', 'true');
           }
         })
-        
+
     } else {
       sessionStorage.setItem('stopped', 'true');
       find('name', 'VSPipe', false).then(function (list) {
@@ -900,7 +917,17 @@ try {
         }
       }).then(function () {
         exportBtn.innerHTML = '<i class="fa-solid fa-film" id="enhance-icon"></i> Enhance video(s) <span id="key-shortcut">Ctrl + Enter</span>';
-        enhancr.terminal('Stopped queue successfully.\r\n')
+        enhancr.terminal('Stopped queue successfully.\r\n');
+        setTimeout(() => {
+          document.getElementById('progress-done').style.width = '0%';
+          document.getElementById('progress-span').style.visibility = 'hidden';
+          document.getElementById('loading').style.visibility = 'hidden';
+          win.setProgressBar(-1, {
+            mode: "none"
+          });
+          document.getElementById('eta').style.visibility = 'hidden';
+          document.getElementById('fps-meter').style.visibility = 'hidden';
+        }, 2000)
         ipcRenderer.send('rpc-done');
         terminal.scrollTop = terminal.scrollHeight;
         running = false;

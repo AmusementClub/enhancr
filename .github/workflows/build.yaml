@@ -60,7 +60,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
         shell: bash
         run: |
-           curl -s -o vs_portable.7z -L https://github.com/AmusementClub/tools/releases/download/2022H2.1b2p/vapoursynth_portable_22H2.1b2p_full.7z
+           curl -s -o vs_portable.7z -L https://github.com/AmusementClub/tools/releases/download/2023H1b4p/vapoursynth_portable_23H1b4p_full.7z
            7z x vs_portable.7z
            mkdir -p out/enhancr-win32-x64/resources/app/src/python/env/
            mv vapoursynth/* out/enhancr-win32-x64/resources/app/src/python/env/

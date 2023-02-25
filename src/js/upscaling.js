@@ -95,7 +95,7 @@ class Upscaling {
             const ffmpeg = !isPackaged ? path.join(__dirname, '..', "env/ffmpeg/ffmpeg.exe") : path.join(process.resourcesPath, "env/ffmpeg/ffmpeg.exe");
 
             // convert gif to video
-            const gifVideoPath = path.join(cache, path.basename(file)+ ".mkv");
+            const gifVideoPath = path.join(cache, path.parse(file).name + ".mkv");
             if (path.extname(file) == ".gif") {
                 try {
                     execSync(`${ffmpeg} -y -loglevel error -i "${file}" "${gifVideoPath}"`);
@@ -103,7 +103,7 @@ class Upscaling {
                 } catch (err) {
                     terminal.innerHTML += '\r\n' + enhancrPrefix + ` Error: GIF preparation has failed.`;
                 };
-            }            
+            }
 
             // scan media for subtitles
             const subsPath = path.join(cache, "subs.ass");
@@ -170,8 +170,14 @@ class Upscaling {
 
             //get onnx input path
             function getOnnxPath() {
-                if (!(document.getElementById('custom-model-check').checked)) {
+                if (!(document.getElementById('custom-model-check').checked) && engine == 'Upscaling - RealESRGAN (TensorRT)') {
                     return path.join(__dirname, '..', "/python/env/vapoursynth64/plugins/models/RealESRGANv2/realesr-animevideov3.onnx");
+                } else if (engine == 'Upscaling - RealCUGAN (TensorRT)') {
+                    if (scale = "2") {
+                        return path.join(__dirname, '..', "/python/env/vapoursynth64/plugins/models/cugan/pro-no-denoise3x-up2x.onnx");
+                    } else if (scale = "3") {
+                        return path.join(__dirname, '..', "/python/env/vapoursynth64/plugins/models/cugan/pro-no-denoise3x-up3x.onnx");
+                    }
                 } else {
                     terminal.innerHTML += '\r\n[enhancr] Using custom model: ' + customModel;
                     if (path.extname(customModel) == ".pth") {
@@ -206,7 +212,7 @@ class Upscaling {
             sessionStorage.setItem('engineOut', engineOut);
 
             // convert onnx to trt engine
-            if (!fse.existsSync(engineOut) && engine == 'Upscaling - RealESRGAN (TensorRT)') {
+            if (!fse.existsSync(engineOut) && engine == 'Upscaling - RealESRGAN (TensorRT)' || !fse.existsSync(engineOut) && engine == 'Upscaling - RealCUGAN (TensorRT)') {
                 function convertToEngine() {
                     return new Promise(function (resolve) {
                         if (fp16.checked == true) {
@@ -309,11 +315,15 @@ class Upscaling {
                 model = "RealESRGAN"
             } else if (engine == "Upscaling - waifu2x (NCNN)") {
                 model = "waifu2x"
+            } else if (engine == "Upscaling - RealESRGAN (NCNN)") {
+                model = "RealESRGAN"
+            } else if (engine == "Upscaling - RealCUGAN (TensorRT)") {
+                model = "RealCUGAN"
             }
 
             // resolve output file path
             if (fileOut == null) {
-                if (extension == "Frame Sequence") var outPath = path.join(output, path.parse(file).name + `_${model}-2x-${extension}`);
+                if (extension == "Frame Sequence") var outPath = path.join(output, path.parse(file).name + `_${model}-${scale}x-${extension}`);
                 else var outPath = path.join(output, path.parse(file).name + `_${model}-2x${extension}`);
                 sessionStorage.setItem("pipeOutPath", outPath);
             } else {
@@ -331,6 +341,9 @@ class Upscaling {
                 }
                 if (engine == "Upscaling - waifu2x (NCNN)") {
                     return !isPackaged ? path.join(__dirname, '..', "/env/inference/waifu2x.py") : path.join(process.resourcesPath, "/env/inference/waifu2x.py");
+                }
+                if (engine == "Upscaling - RealCUGAN (TensorRT)") {
+                    return !isPackaged ? path.join(__dirname, '..', "/env/inference/cugan_trt.py") : path.join(process.resourcesPath, "/env/inference/cugan_trt.py");
                 }
             }
             var engine = pickEngine();
@@ -393,7 +406,7 @@ class Upscaling {
                         term.stderr.on('data', (data) => {
                             process.stderr.write(`[Pipe] ${data}`);
                             // remove leading and trailing whitespace, including newline characters
-                            let dataString = data.toString().trim(); 
+                            let dataString = data.toString().trim();
                             if (dataString.startsWith('Frame:')) {
                                 // Replace the last line of the textarea with the updated line
                                 terminal.innerHTML = terminal.innerHTML.replace(/([\s\S]*\n)[\s\S]*$/, '$1' + '[Pipe] ' + dataString);
@@ -417,6 +430,10 @@ class Upscaling {
                                 let mkv = extension == ".mkv";
                                 let mkvFix = mkv ? "-max_interleave_delta 0" : "";
 
+                                // fix muxing audio into webm
+                                let webm = extension == ".webm";
+                                let webmFix = webm ? "-c:a libopus -b:a 192k" : "-codec copy";
+
                                 let out = sessionStorage.getItem('pipeOutPath');
 
                                 if (extension == "Frame Sequence") {
@@ -425,7 +442,8 @@ class Upscaling {
                                     var muxCmd = `"${ffmpeg}" -y -loglevel error -i "${tmpOutPath}" "${path.join(output, path.basename(sessionStorage.getItem("pipeOutPath")) + "-" + Date.now(), "output_frame_%04d.png")}"`;
                                 } else {
                                     terminal.innerHTML += `[enhancr] Muxing in streams..\r\n`;
-                                    var muxCmd = `"${ffmpeg}" -y -loglevel error -i "${file}" -i "${tmpOutPath}" -map 1? -map 0? -map -0:v -dn -codec copy ${mkvFix} "${out}"`;
+                                    var muxCmd = `"${ffmpeg}" -y -loglevel error -i "${file}" -i "${tmpOutPath}" -map 1? -map 0? -map -0:v -dn ${mkvFix} ${webmFix} "${out}"`;
+                                    console.log(muxCmd);
                                 }
 
                                 let muxTerm = spawn(muxCmd, [], { shell: true, stdio: ['inherit', 'pipe', 'pipe'], windowsHide: true });

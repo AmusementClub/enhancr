@@ -23,6 +23,10 @@ with open(os.path.join(tmp), encoding='utf-8') as f:
     data = json.load(f)
     video_path = data['file']
     engine = data['engine']
+    tiling = data['tiling']
+    tileHeight = int(data['tileHeight'])
+    tileWidth = int(data['tileWidth'])
+    fp16 = data['fp16']
     streams = data['streams']
 
 def threading():
@@ -34,7 +38,7 @@ clip = core.lsmas.LWLibavSource(source=f"{video_path}", cache=0)
 clip = vs.core.resize.Bicubic(clip, format=vs.RGBS, matrix_in_s="709")
 
 #clip = core.w2xnvk.Waifu2x(clip, noise=2, scale=2, model=0, precision=16)
-clip = vsmlrt.Waifu2x(clip, noise=2, scale=2, model=vsmlrt.Waifu2xModel.upconv_7_anime_style_art_rgb, backend=vsmlrt.Backend.ORT_CUDA(fp16=True))
+clip = vsmlrt.Waifu2x(clip, noise=2, scale=2, model=vsmlrt.Waifu2xModel.upconv_7_anime_style_art_rgb, backend=vsmlrt.Backend.ORT_CUDA(fp16=True, num_streams=threading()))
 
 clip = vs.core.resize.Bicubic(clip, format=vs.YUV420P8, matrix_s="709")
 
